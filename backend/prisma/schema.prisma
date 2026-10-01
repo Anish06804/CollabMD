@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -14,12 +15,12 @@ enum Permission {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  token       String   @unique
+  id          String            @id @default(uuid())
+  token       String            @unique
   name        String
   color       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   memberships RoomMember[]
   ownedRooms  Room[]            @relation("RoomOwner")
   versions    DocumentVersion[] @relation("VersionCreator")
@@ -27,15 +28,15 @@ model User {
 }
 
 model Room {
-  id                String   @id @default(uuid())
-  roomCode          String   @unique
+  id                String       @id @default(uuid())
+  roomCode          String       @unique
   name              String
-  defaultPermission String   @default("edit") // "edit" | "view" — link access for new members
-  locked            Boolean  @default(false) // host viewing-mode lock: everyone except the owner is read-only
+  defaultPermission String       @default("edit") // "edit" | "view" — link access for new members
+  locked            Boolean      @default(false) // host viewing-mode lock: everyone except the owner is read-only
   ownerId           String
-  owner             User     @relation("RoomOwner", fields: [ownerId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  owner             User         @relation("RoomOwner", fields: [ownerId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
   members           RoomMember[]
   document          Document?
 }
@@ -54,14 +55,14 @@ model RoomMember {
 }
 
 model Document {
-  id        String   @id @default(uuid())
-  roomId    String   @unique
-  content   String   @default("") // plain markdown, kept in sync with the Yjs doc
-  state     Bytes? // Yjs document state (binary update)
-  version   Int      @default(0) // latest version number
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  id        String            @id @default(uuid())
+  roomId    String            @unique
+  content   String            @default("") // plain markdown, kept in sync with the Yjs doc
+  state     Bytes?            // Yjs document state (binary update)
+  version   Int               @default(0) // latest version number
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  room      Room              @relation(fields: [roomId], references: [id], onDelete: Cascade)
   versions  DocumentVersion[]
   snapshots Snapshot[]
 }
