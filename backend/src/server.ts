@@ -20,6 +20,9 @@ const app = express()
 app.use(cors({ origin: config.frontendUrl === '*' ? true : config.frontendUrl.split(',') }))
 app.use(express.json({ limit: '1mb' }))
 
+// Favicon 404 ignore handler
+app.get('/favicon.ico', (_req, res) => res.status(204).end())
+
 // Health Check API
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() })
