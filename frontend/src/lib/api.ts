@@ -30,7 +30,11 @@ export function clearIdentity() {
   localStorage.removeItem(NAME_KEY)
 }
 
-async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+// Clean Base URL normalization to handle environment variable or fallback
+const rawUrl = import.meta.env.VITE_API_URL || 'https://collabmd.onrender.com'
+const API_BASE_URL = rawUrl.replace(/\/+$/, '') // remove trailing slash
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -41,8 +45,13 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   if (options.body && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json'
   }
-  const sep = url.includes('?') ? '&' : '?'
-  const finalUrl = token && !url.includes('token=') && !options.body ? `${url}${sep}token=${token}` : url
+
+  // Ensure full URL is formed properly with API_BASE_URL
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  const targetUrl = cleanPath.startsWith('http') ? cleanPath : `${API_BASE_URL}${cleanPath}`
+
+  const sep = targetUrl.includes('?') ? '&' : '?'
+  const finalUrl = token && !targetUrl.includes('token=') && !options.body ? `${targetUrl}${sep}token=${token}` : targetUrl
 
   const res = await fetch(finalUrl, { ...options, headers })
   if (!res.ok) {
@@ -201,10 +210,12 @@ export interface MermaidGeneration {
   warnings: string[]
 }
 
-export async function downloadFile(url: string, filename: string) {
+export async function downloadFile(path: string, filename: string) {
   const token = getToken()
-  const sep = url.includes('?') ? '&' : '?'
-  const res = await fetch(token ? `${url}${sep}token=${token}` : url)
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  const targetUrl = cleanPath.startsWith('http') ? cleanPath : `${API_BASE_URL}${cleanPath}`
+  const sep = targetUrl.includes('?') ? '&' : '?'
+  const res = await fetch(token ? `${targetUrl}${sep}token=${token}` : targetUrl)
   if (!res.ok) throw new Error(`Download failed (${res.status})`)
   const blob = await res.blob()
   const objectUrl = URL.createObjectURL(blob)
