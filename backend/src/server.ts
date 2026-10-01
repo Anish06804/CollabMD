@@ -20,6 +20,7 @@ const app = express()
 app.use(cors({ origin: config.frontendUrl === '*' ? true : config.frontendUrl.split(',') }))
 app.use(express.json({ limit: '1mb' }))
 
+// Health Check API
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() })
 })
@@ -37,6 +38,15 @@ if (fs.existsSync(frontendDist)) {
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next()
     res.sendFile(path.join(frontendDist, 'index.html'))
+  })
+} else {
+  // Root path handler when frontend is not served from backend (Render API deployment)
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      status: 'success',
+      message: 'CollabMD Backend API + WebSocket Server is running!',
+      health: '/api/health'
+    })
   })
 }
 
