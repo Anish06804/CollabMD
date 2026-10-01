@@ -1,0 +1,27 @@
+version: "3.9"
+
+# Local development infrastructure for COLLABMD.
+# Usage: docker compose up -d
+# Then copy backend/.env.example to backend/.env and set DATABASE_URL=postgresql://anish:biswas200@localhost:5432/docmaster
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: collabmd-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: anish
+      POSTGRES_PASSWORD: biswas200
+      POSTGRES_DB: docmaster
+    ports:
+      - "5432:5432"
+    volumes:
+      - collabmd-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anish -d docmaster"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  collabmd-pgdata:

@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Permission {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  name        String
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  memberships RoomMember[]
+  ownedRooms  Room[]            @relation("RoomOwner")
+  versions    DocumentVersion[] @relation("VersionCreator")
+  snapshots   Snapshot[]        @relation("SnapshotCreator")
+}
+
+model Room {
+  id                String   @id @default(uuid())
+  roomCode          String   @unique
+  name              String
+  defaultPermission String   @default("edit") // "edit" | "view" — link access for new members
+  locked            Boolean  @default(false) // host viewing-mode lock: everyone except the owner is read-only
+  ownerId           String
+  owner             User     @relation("RoomOwner", fields: [ownerId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  members           RoomMember[]
+  document          Document?
+}
+
+model RoomMember {
+  id         String     @id @default(uuid())
+  roomId     String
+  userId     String
+  permission Permission @default(EDITOR)
+  joinedAt   DateTime   @default(now())
+  room       Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  roomId    String   @unique
+  content   String   @default("") // plain markdown, kept in sync with the Yjs doc
+  state     Bytes? // Yjs document state (binary update)
+  version   Int      @default(0) // latest version number
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  versions  DocumentVersion[]
+  snapshots Snapshot[]
+}
+
+model DocumentVersion {
+  id            String   @id @default(uuid())
+  documentId    String
+  content       String
+  versionNumber Int
+  createdById   String?
+  createdBy     User?    @relation("VersionCreator", fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId, createdAt])
+}
+
+model Snapshot {
+  id          String   @id @default(uuid())
+  documentId  String
+  name        String
+  content     String
+  createdById String?
+  createdBy   User?    @relation("SnapshotCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+}
